@@ -87,19 +87,19 @@ for %%F in (*.ai *.eps *.svg *.indd) do call :SafeMove "%%F" "Projects & Assets\
 for %%F in (*.prproj *.aep *.drp *.veg) do call :SafeMove "%%F" "Projects & Assets\Video Editing Projects"
 
 echo Moving Documents...
-for %%F in (*.pdf *.doc *.docx *.txt *.xls *.xlsx *.ppt *.pptx) do call :SafeMove "%%F" "Documents"
+for %%F in (*.pdf *.doc *.docx *.txt *.xls *.xlsx *.ppt *.pptx *.odt *.ods *.odp *.rtf *.pages *.numbers *.key *.csv *.md *.epub *.mobi) do call :SafeMove "%%F" "Documents"
 
 echo Moving Videos...
-for %%F in (*.mp4 *.mkv *.avi *.mov) do call :SafeMove "%%F" "Videos"
+for %%F in (*.mp4 *.mkv *.avi *.mov *.wmv *.flv *.webm *.vob *.ogv *.m4v *.3gp *.3g2 *.mts *.m2ts *.divv *.divx *.asf *.mpeg *.mpg) do call :SafeMove "%%F" "Videos"
 
 echo Moving Music...
-for %%F in (*.mp3 *.wav *.flac) do call :SafeMove "%%F" "Music"
+for %%F in (*.mp3 *.wav *.flac *.aac *.ogg *.m4a *.wma *.alac *.aiff *.ape *.opus *.mp2 *.m4p *.pcm *.dsd) do call :SafeMove "%%F" Music
 
 echo Moving Archives...
-for %%F in (*.zip *.rar *.7z) do call :SafeMove "%%F" "Archives"
+for %%F in (*.zip *.rar *.7z *.tar *.gz *.bz2 *.xz *.vmdk *.dmg *.cab *.jar *.tgz *.zipx *.zst) do call :SafeMove "%%F" "Archives"
 
 echo Moving Programs...
-for %%F in (*.exe *.msi) do call :SafeMove "%%F" "Programs"
+for %%F in (*.exe *.msi *.iso) do call :SafeMove "%%F" "Programs"
 
 echo Moving Scripts and Code Files...
 for %%F in (*.ahk *.py *.pyw *.ipynb *.pyi *.pyx *.pxd *.html *.htm *.css *.js *.ts *.php *.rb *.java *.c *.h *.cpp *.cc *.cxx *.cs *.go *.rs *.swift *.kt *.sql *.r *.json *.xml *.yaml *.yml *.sh *.ps1) do call :SafeMove "%%F" "Scripts"
