@@ -1,3 +1,6 @@
+:: Download this script by clicking the "Download Raw File" button in the top right of this window (the downwards facing arrow).
+:: Run as administrator. (Ignore the windows warnings as it is just normal for windows to pop up warnings when downloading unknown scripts online).
+
 @echo off
 setlocal EnableDelayedExpansion
 title File Organizer
