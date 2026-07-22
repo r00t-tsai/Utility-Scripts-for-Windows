@@ -1,3 +1,5 @@
+// A tampermonkey script for an automated website blocker. Works on any browser as long as the tampermonkey extension is installed.
+
 // ==UserScript==
 // @name         Focus Website Blocker
 // @namespace    http://tampermonkey.net/
