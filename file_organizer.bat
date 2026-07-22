@@ -48,6 +48,11 @@ echo %TARGET_DIR%
 echo.
 echo And automatically move all loose files into them based
 echo on their file extensions.
+echo.
+echo If a file with the same name already exists in the
+echo destination folder, the incoming file will be renamed
+echo with a (1), (2), etc. suffix instead of being skipped
+echo or overwritten.
 echo ========================================================
 echo.
 set /p final_choice="Proceed with organizing this folder? (Y/N): "
@@ -59,6 +64,7 @@ goto confirm
 :organize_files
 echo.
 echo Organizing files...
+
 mkdir "Images" 2>nul
 mkdir "Documents" 2>nul
 mkdir "Videos" 2>nul
@@ -70,109 +76,69 @@ mkdir "Projects & Assets\Photoshop" 2>nul
 mkdir "Projects & Assets\3D & Modeling" 2>nul
 mkdir "Projects & Assets\Video Editing Projects" 2>nul
 mkdir "Projects & Assets\Vector & Design" 2>nul
+
 echo Moving Standard Images...
-move *.jpg "Images\" 2>nul
-move *.jpeg "Images\" 2>nul
-move *.png "Images\" 2>nul
-move *.gif "Images\" 2>nul
-move *.jfif "Images\" 2>nul
-move *.webp "Images\" 2>nul
-move *.tiff "Images\" 2>nul
-move *.bmp "Images\" 2>nul
-move *.avif "Images\" 2>nul
-move *.dng "Images\" 2>nul
-move *.nef "Images\" 2>nul
-move *.cr2 "Images\" 2>nul
-move *.raw "Images\" 2>nul
+for %%F in (*.jpg *.jpeg *.png *.gif *.jfif *.webp *.tiff *.bmp *.avif *.dng *.nef *.cr2 *.raw) do call :SafeMove "%%F" "Images"
+
 echo Moving Digital Art, 3D, and Design Projects...
-move *.psd "Projects & Assets\Photoshop\" 2>nul
-move *.psb "Projects & Assets\Photoshop\" 2>nul
-move *.clip "Projects & Assets\Photoshop\" 2>nul
-move *.kra "Projects & Assets\Photoshop\" 2>nul
-move *.blend "Projects & Assets\3D & Modeling\" 2>nul
-move *.obj "Projects & Assets\3D & Modeling\" 2>nul
-move *.fbx "Projects & Assets\3D & Modeling\" 2>nul
-move *.stl "Projects & Assets\3D & Modeling\" 2>nul
-move *.max "Projects & Assets\3D & Modeling\" 2>nul
-move *.ma "Projects & Assets\3D & Modeling\" 2>nul
-move *.mb "Projects & Assets\3D & Modeling\" 2>nul
-move *.c4d "Projects & Assets\3D & Modeling\" 2>nul
-move *.ai "Projects & Assets\Vector & Design\" 2>nul
-move *.eps "Projects & Assets\Vector & Design\" 2>nul
-move *.svg "Projects & Assets\Vector & Design\" 2>nul
-move *.indd "Projects & Assets\Vector & Design\" 2>nul
-move *.prproj "Projects & Assets\Video Editing Projects\" 2>nul
-move *.aep "Projects & Assets\Video Editing Projects\" 2>nul
-move *.drp "Projects & Assets\Video Editing Projects\" 2>nul
-move *.veg "Projects & Assets\Video Editing Projects\" 2>nul
+for %%F in (*.psd *.psb *.clip *.kra) do call :SafeMove "%%F" "Projects & Assets\Photoshop"
+for %%F in (*.blend *.obj *.fbx *.stl *.max *.ma *.mb *.c4d) do call :SafeMove "%%F" "Projects & Assets\3D & Modeling"
+for %%F in (*.ai *.eps *.svg *.indd) do call :SafeMove "%%F" "Projects & Assets\Vector & Design"
+for %%F in (*.prproj *.aep *.drp *.veg) do call :SafeMove "%%F" "Projects & Assets\Video Editing Projects"
+
 echo Moving Documents...
-move *.pdf "Documents\" 2>nul
-move *.doc "Documents\" 2>nul
-move *.docx "Documents\" 2>nul
-move *.txt "Documents\" 2>nul
-move *.xls "Documents\" 2>nul
-move *.xlsx "Documents\" 2>nul
-move *.ppt "Documents\" 2>nul
-move *.pptx "Documents\" 2>nul
+for %%F in (*.pdf *.doc *.docx *.txt *.xls *.xlsx *.ppt *.pptx) do call :SafeMove "%%F" "Documents"
+
 echo Moving Videos...
-move *.mp4 "Videos\" 2>nul
-move *.mkv "Videos\" 2>nul
-move *.avi "Videos\" 2>nul
-move *.mov "Videos\" 2>nul
+for %%F in (*.mp4 *.mkv *.avi *.mov) do call :SafeMove "%%F" "Videos"
+
 echo Moving Music...
-move *.mp3 "Music\" 2>nul
-move *.wav "Music\" 2>nul
-move *.flac "Music\" 2>nul
+for %%F in (*.mp3 *.wav *.flac) do call :SafeMove "%%F" "Music"
+
 echo Moving Archives...
-move *.zip "Archives\" 2>nul
-move *.rar "Archives\" 2>nul
-move *.7z "Archives\" 2>nul
+for %%F in (*.zip *.rar *.7z) do call :SafeMove "%%F" "Archives"
+
 echo Moving Programs...
-move *.exe "Programs\" 2>nul
-move *.msi "Programs\" 2>nul
-@echo off
+for %%F in (*.exe *.msi) do call :SafeMove "%%F" "Programs"
+
 echo Moving Scripts and Code Files...
-move *.py "Scripts\" 2>nul
-move *.pyw "Scripts\" 2>nul
-move *.ipynb "Scripts\" 2>nul
-move *.pyi "Scripts\" 2>nul
-move *.pyx "Scripts\" 2>nul
-move *.pxd "Scripts\" 2>nul
-move *.html "Scripts\" 2>nul
-move *.htm "Scripts\" 2>nul
-move *.css "Scripts\" 2>nul
-move *.js "Scripts\" 2>nul
-move *.ts "Scripts\" 2>nul
-move *.php "Scripts\" 2>nul
-move *.rb "Scripts\" 2>nul
-move *.java "Scripts\" 2>nul
-move *.c "Scripts\" 2>nul
-move *.h "Scripts\" 2>nul
-move *.cpp "Scripts\" 2>nul
-move *.cc "Scripts\" 2>nul
-move *.cxx "Scripts\" 2>nul
-move *.cs "Scripts\" 2>nul
-move *.go "Scripts\" 2>nul
-move *.rs "Scripts\" 2>nul
-move *.swift "Scripts\" 2>nul
-move *.kt "Scripts\" 2>nul
-move *.sql "Scripts\" 2>nul
-move *.r "Scripts\" 2>nul
-move *.json "Scripts\" 2>nul
-move *.xml "Scripts\" 2>nul
-move *.yaml "Scripts\" 2>nul
-move *.yml "Scripts\" 2>nul
-move *.sh "Scripts\" 2>nul
-move *.ps1 "Scripts\" 2>nul
+for %%F in (*.py *.pyw *.ipynb *.pyi *.pyx *.pxd *.html *.htm *.css *.js *.ts *.php *.rb *.java *.c *.h *.cpp *.cc *.cxx *.cs *.go *.rs *.swift *.kt *.sql *.r *.json *.xml *.yaml *.yml *.sh *.ps1) do call :SafeMove "%%F" "Scripts"
 for %%F in (*.bat *.cmd) do (
-    if /I not "%%F"=="%~nx0" move "%%F" "Scripts\" 2>nul
+    if /I not "%%F"=="%~nx0" call :SafeMove "%%F" "Scripts"
 )
 
-echo Done!
-pause
-
-
 echo.
-echo Organization complete! 
+echo Organization complete!
 pause
 goto dir_menu
+
+:SafeMove
+setlocal EnableDelayedExpansion
+set "SRC=%~1"
+set "DESTDIR=%~2"
+
+if not exist "%SRC%" (
+    endlocal
+    goto :eof
+)
+
+set "BASENAME=%~n1"
+set "EXT=%~x1"
+set "DESTPATH=%DESTDIR%\%~nx1"
+
+if not exist "%DESTPATH%" (
+    move "%SRC%" "%DESTPATH%" >nul 2>&1
+    endlocal
+    goto :eof
+)
+
+set "COUNT=1"
+:SafeMove_Loop
+set "CANDIDATE=%DESTDIR%\%BASENAME% (!COUNT!)%EXT%"
+if exist "!CANDIDATE!" (
+    set /a COUNT+=1
+    goto SafeMove_Loop
+)
+move "%SRC%" "!CANDIDATE!" >nul 2>&1
+endlocal
+goto :eof
