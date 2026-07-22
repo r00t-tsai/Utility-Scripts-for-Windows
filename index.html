@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#EAF6FF">
+<title>r00t-tsai — Utility Scripts for Windows</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%232F8FDE'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-1:#EAF6FF;
+    --sky-2:#DCEFFC;
+    --card:#FFFFFF;
+    --deep:#0B4A6F;
+    --muted:#5B7C93;
+    --accent:#2F8FDE;
+    --line:#C6E1F5;
+
+    --t-bat:#2F8FDE;
+    --t-ahk:#1AA6B7;
+    --t-js:#4C6FE0;
+    --t-html:#0EA5C4;
+
+    --ff-display:'Space Grotesk', system-ui, sans-serif;
+    --ff-body:'Inter', system-ui, sans-serif;
+    --ff-mono:'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--sky-1);
+    color:var(--deep);
+    font-family:var(--ff-body);
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  a{ color:inherit; text-decoration:none; }
+  a:focus-visible, button:focus-visible{
+    outline:2px solid var(--accent); outline-offset:3px; border-radius:4px;
+  }
+
+  /* --- ambient sky --- */
+  .sky{
+    position:fixed; inset:0; z-index:-1; overflow:hidden;
+    background: linear-gradient(180deg, #F5FBFF 0%, var(--sky-1) 45%, var(--sky-2) 100%);
+  }
+  .cloud{
+    position:absolute; border-radius:999px;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.9), rgba(255,255,255,.35) 70%);
+    filter: blur(1px);
+    animation: drift linear infinite;
+  }
+  .cloud.c1{ width:340px; height:90px; top:8%;  left:-20%; animation-duration:70s; }
+  .cloud.c2{ width:220px; height:60px; top:22%; left:-30%; animation-duration:95s; animation-delay:-20s; }
+  .cloud.c3{ width:400px; height:100px; top:65%; left:-25%; animation-duration:110s; animation-delay:-50s; opacity:.7; }
+  @keyframes drift{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(160vw); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .cloud{ animation:none; }
+  }
+
+  .wrap{
+    max-width:920px; margin:0 auto;
+    padding: clamp(2.5rem,6vw,5rem) clamp(1.25rem,5vw,2rem) 4rem;
+  }
+
+  header{ margin-bottom: clamp(2.5rem,6vw,4rem); }
+  .eyebrow{
+    display:flex; align-items:center; gap:.6rem;
+    font-family:var(--ff-mono); font-size:.8rem; letter-spacing:.02em;
+    color:var(--muted); margin-bottom:1rem;
+  }
+  .eyebrow .dot{
+    width:7px; height:7px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 0 4px rgba(47,143,222,.15);
+  }
+  .eyebrow a{ color:var(--accent); border-bottom:1px solid transparent; }
+  .eyebrow a:hover{ border-bottom-color:var(--accent); }
+
+  h1{
+    font-family:var(--ff-display); font-weight:700;
+    font-size:clamp(2.1rem,5.5vw,3.2rem);
+    line-height:1.05; margin:0 0 .9rem; letter-spacing:-.01em;
+    color:var(--deep);
+  }
+  .lede{
+    font-size:clamp(1rem,2vw,1.1rem); color:var(--muted);
+    max-width:52ch; line-height:1.55; margin:0;
+  }
+
+  .grid{
+    display:grid; grid-template-columns:repeat(2,1fr);
+    gap:1.1rem;
+  }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+
+  .card{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:1.5rem 1.5rem 1.35rem;
+    display:flex; flex-direction:column; gap:.7rem;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .card:hover, .card:focus-within{
+    transform:translateY(-3px);
+    box-shadow:0 14px 30px -18px rgba(11,74,111,.35);
+    border-color: var(--accent);
+  }
+
+  .tag{
+    display:inline-flex; align-self:flex-start;
+    font-family:var(--ff-mono); font-size:.72rem; font-weight:500;
+    padding:.28rem .55rem; border-radius:6px;
+    color:#fff; letter-spacing:.02em;
+  }
+  .tag.bat{ background:var(--t-bat); }
+  .tag.ahk{ background:var(--t-ahk); }
+  .tag.js{  background:var(--t-js); }
+  .tag.html{ background:var(--t-html); }
+
+  .card h2{
+    font-family:var(--ff-display); font-weight:600;
+    font-size:1.18rem; margin:0; color:var(--deep);
+  }
+  .card p{
+    margin:0; font-size:.92rem; line-height:1.5; color:var(--muted);
+    flex-grow:1;
+  }
+
+  .open-link{
+    display:inline-flex; align-items:center; gap:.4rem;
+    font-family:var(--ff-mono); font-size:.82rem; font-weight:500;
+    color:var(--accent); margin-top:.3rem;
+  }
+  .open-link .arrow{ transition: transform .18s ease; }
+  .card:hover .open-link .arrow, .card:focus-within .open-link .arrow{
+    transform: translateX(4px);
+  }
+  .card-link-overlay{
+    position:absolute; inset:0; border-radius:16px;
+  }
+
+  footer{
+    margin-top: clamp(3rem,7vw,4.5rem);
+    padding-top:1.5rem; border-top:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:.5rem 1.2rem;
+    font-family:var(--ff-mono); font-size:.78rem; color:var(--muted);
+  }
+  footer a{ color:var(--accent); }
+  footer a:hover{ text-decoration:underline; }
+</style>
+</head>
+<body>
+
+<div class="sky" aria-hidden="true">
+  <span class="cloud c1"></span>
+  <span class="cloud c2"></span>
+  <span class="cloud c3"></span>
+</div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow"><span class="dot"></span> r00t-tsai / <a href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows" target="_blank" rel="noopener">Utility-Scripts-for-Windows</a></p>
+    <h1>Small scripts that do one job well.</h1>
+    <p class="lede">A handful of Windows utilities for cleanup, organizing, automation, and focus. Pick one below to open the file directly.</p>
+  </header>
+
+  <main class="grid">
+
+    <article class="card">
+      <span class="tag bat">.bat</span>
+      <h2>Bulk File / Folder Deleter</h2>
+      <p>Clears out files by type — or whole folders — from Desktop, Downloads, or any custom path, with a confirmation step before anything permanent happens.</p>
+      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/bulk-file-deleter.bat" target="_blank" rel="noopener" aria-label="Open bulk-file-deleter.bat">
+        Open file <span class="arrow">→</span>
+      </a>
+      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/bulk-file-deleter.bat" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+    </article>
+
+    <article class="card">
+      <span class="tag bat">.bat</span>
+      <h2>File Organizer</h2>
+      <p>Sorts a messy folder into Images, Documents, Videos, Archives, and more — automatically, based on file extension, with safe renaming on conflicts.</p>
+      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/file-organizer.bat" target="_blank" rel="noopener" aria-label="Open file-organizer.bat">
+        Open file <span class="arrow">→</span>
+      </a>
+      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/file-organizer.bat" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+    </article>
+
+    <article class="card">
+      <span class="tag ahk">.ahk</span>
+      <h2>Macro Recorder & Playback</h2>
+      <p>Records mouse moves, clicks, and keystrokes, then plays them back exactly as captured. Hotkeys to start, pause, and abort mid-playback.</p>
+      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/input-recorder.ahk" target="_blank" rel="noopener" aria-label="Open input-recorder.ahk">
+        Open file <span class="arrow">→</span>
+      </a>
+      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/input-recorder.ahk" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+    </article>
+
+    <article class="card">
+      <span class="tag html">.html</span>
+      <h2>Tabata Timer</h2>
+      <p>A configurable work/rest interval timer with sound cues, round tracking, and a screen wake lock — runs entirely in the browser.</p>
+      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/tabata-timer.html" target="_blank" rel="noopener" aria-label="Open tabata-timer.html">
+        Open file <span class="arrow">→</span>
+      </a>
+      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/tabata-timer.html" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+    </article>
+
+    <article class="card">
+      <span class="tag js">.js</span>
+      <h2>Focus Website Blocker</h2>
+      <p>A Tampermonkey userscript that replaces distracting sites with a blocked-page message the instant they start loading.</p>
+      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/focus-blocker.user.js" target="_blank" rel="noopener" aria-label="Open focus-blocker.user.js">
+        Open file <span class="arrow">→</span>
+      </a>
+      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/focus-blocker.user.js" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+    </article>
+
+  </main>
+
+  <footer>
+    <span>r00t-tsai</span>
+    <a href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows" target="_blank" rel="noopener">View full repo</a>
+  </footer>
+</div>
+
+</body>
+</html>
