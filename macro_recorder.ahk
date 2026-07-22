@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 CoordMode "Mouse", "Screen"
-SendMode "Event"          ; change to "Play" (SendPlay) if targeting games that block SendEvent
+SendMode "Event"          ; you should change to "Play" (SendPlay) if targeting games that block SendEvent
 
 ;  F9  = Start / Stop recording
 ;  F10 = Pause / Resume recording
