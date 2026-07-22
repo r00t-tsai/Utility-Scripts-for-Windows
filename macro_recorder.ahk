@@ -1,12 +1,15 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 CoordMode "Mouse", "Screen"
-SendMode "Event"          ; you should change to "Play" (SendPlay) if targeting games that block SendEvent
+SendMode "Event"          ; change to "Play" (SendPlay) if targeting games that block SendEvent
 
+; ============================================================
+;  MACRO RECORDER / PLAYER
 ;  F9  = Start / Stop recording
 ;  F10 = Pause / Resume recording
 ;  F11 = Play back the last recording
 ;  F12 = Abort playback (emergency stop)
+; ============================================================
 
 controlKeys := ["F9", "F10", "F11", "F12"]   ; never recorded themselves
 mouseButtons := ["LButton", "RButton", "MButton", "XButton1", "XButton2"]
@@ -114,14 +117,22 @@ RecordKeyUp(hk) {
     name := StrReplace(StrReplace(hk, "~*", ""), " up", "")
     LogEvent("key", name, "Up")
 }
-RecordWheelUp(*)    { if ShouldRecord()
-    LogEvent("wheel", "WheelUp", "") }
-RecordWheelDown(*)  { if ShouldRecord()
-    LogEvent("wheel", "WheelDown", "") }
-RecordWheelLeft(*)  { if ShouldRecord()
-    LogEvent("wheel", "WheelLeft", "") }
-RecordWheelRight(*) { if ShouldRecord()
-    LogEvent("wheel", "WheelRight", "") }
+RecordWheelUp(*) {
+    if ShouldRecord()
+        LogEvent("wheel", "WheelUp", "")
+}
+RecordWheelDown(*) {
+    if ShouldRecord()
+        LogEvent("wheel", "WheelDown", "")
+}
+RecordWheelLeft(*) {
+    if ShouldRecord()
+        LogEvent("wheel", "WheelLeft", "")
+}
+RecordWheelRight(*) {
+    if ShouldRecord()
+        LogEvent("wheel", "WheelRight", "")
+}
 
 ShouldRecord() {
     global recording, paused
