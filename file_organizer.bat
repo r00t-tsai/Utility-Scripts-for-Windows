@@ -102,7 +102,7 @@ echo Moving Programs...
 for %%F in (*.exe *.msi) do call :SafeMove "%%F" "Programs"
 
 echo Moving Scripts and Code Files...
-for %%F in (*.py *.pyw *.ipynb *.pyi *.pyx *.pxd *.html *.htm *.css *.js *.ts *.php *.rb *.java *.c *.h *.cpp *.cc *.cxx *.cs *.go *.rs *.swift *.kt *.sql *.r *.json *.xml *.yaml *.yml *.sh *.ps1) do call :SafeMove "%%F" "Scripts"
+for %%F in (*.ahk *.py *.pyw *.ipynb *.pyi *.pyx *.pxd *.html *.htm *.css *.js *.ts *.php *.rb *.java *.c *.h *.cpp *.cc *.cxx *.cs *.go *.rs *.swift *.kt *.sql *.r *.json *.xml *.yaml *.yml *.sh *.ps1) do call :SafeMove "%%F" "Scripts"
 for %%F in (*.bat *.cmd) do (
     if /I not "%%F"=="%~nx0" call :SafeMove "%%F" "Scripts"
 )
