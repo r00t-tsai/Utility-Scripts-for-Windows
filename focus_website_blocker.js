@@ -1,3 +1,11 @@
+// Focus Website Blocker
+// Installation
+// - Download the Tampermonkey extension on google
+// - Click open the Tampermonkey extension to open the pop up
+// - Click "create new script"
+// - Remove everything and copy and paste this script to the editor
+// - Save the script (CTRL+S) and wait for the confirmation that it has been running.
+
 // ==UserScript==
 // @name         Focus Website Blocker
 // @namespace    http://tampermonkey.net/
