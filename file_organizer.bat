@@ -59,8 +59,6 @@ goto confirm
 :organize_files
 echo.
 echo Organizing files...
-
-:: Create standard directories
 mkdir "Images" 2>nul
 mkdir "Documents" 2>nul
 mkdir "Videos" 2>nul
@@ -68,13 +66,10 @@ mkdir "Music" 2>nul
 mkdir "Archives" 2>nul
 mkdir "Programs" 2>nul
 mkdir "Scripts" 2>nul
-
-:: Create specialized Art, Model, & Video Asset directories
 mkdir "Projects & Assets\Photoshop" 2>nul
 mkdir "Projects & Assets\3D & Modeling" 2>nul
 mkdir "Projects & Assets\Video Editing Projects" 2>nul
 mkdir "Projects & Assets\Vector & Design" 2>nul
-
 echo Moving Standard Images...
 move *.jpg "Images\" 2>nul
 move *.jpeg "Images\" 2>nul
@@ -89,7 +84,6 @@ move *.dng "Images\" 2>nul
 move *.nef "Images\" 2>nul
 move *.cr2 "Images\" 2>nul
 move *.raw "Images\" 2>nul
-
 echo Moving Digital Art, 3D, and Design Projects...
 move *.psd "Projects & Assets\Photoshop\" 2>nul
 move *.psb "Projects & Assets\Photoshop\" 2>nul
@@ -111,7 +105,6 @@ move *.prproj "Projects & Assets\Video Editing Projects\" 2>nul
 move *.aep "Projects & Assets\Video Editing Projects\" 2>nul
 move *.drp "Projects & Assets\Video Editing Projects\" 2>nul
 move *.veg "Projects & Assets\Video Editing Projects\" 2>nul
-
 echo Moving Documents...
 move *.pdf "Documents\" 2>nul
 move *.doc "Documents\" 2>nul
@@ -121,30 +114,24 @@ move *.xls "Documents\" 2>nul
 move *.xlsx "Documents\" 2>nul
 move *.ppt "Documents\" 2>nul
 move *.pptx "Documents\" 2>nul
-
 echo Moving Videos...
 move *.mp4 "Videos\" 2>nul
 move *.mkv "Videos\" 2>nul
 move *.avi "Videos\" 2>nul
 move *.mov "Videos\" 2>nul
-
 echo Moving Music...
 move *.mp3 "Music\" 2>nul
 move *.wav "Music\" 2>nul
 move *.flac "Music\" 2>nul
-
 echo Moving Archives...
 move *.zip "Archives\" 2>nul
 move *.rar "Archives\" 2>nul
 move *.7z "Archives\" 2>nul
-
 echo Moving Programs...
 move *.exe "Programs\" 2>nul
 move *.msi "Programs\" 2>nul
-
 @echo off
 echo Moving Scripts and Code Files...
-
 move *.py "Scripts\" 2>nul
 move *.pyw "Scripts\" 2>nul
 move *.ipynb "Scripts\" 2>nul
