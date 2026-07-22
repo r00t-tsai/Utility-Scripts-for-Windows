@@ -1,3 +1,9 @@
+; Macro Recorder
+; Installation
+; Download AutoHotkey v2 on Google
+; Download this script by clicking the download button on the upper right of this window
+; Click to run.
+
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 CoordMode "Mouse", "Screen"
