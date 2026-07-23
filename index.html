@@ -150,6 +150,8 @@
     display: inline-flex; align-items: center; gap: .4rem;
     font-family: var(--ff-mono); font-size: .82rem; font-weight: 500;
     color: var(--accent); margin-top: .3rem;
+    background: none; border: none; padding: 0; cursor: pointer;
+    font: inherit; text-align: left;
   }
   .open-link .arrow { transition: transform .18s ease; }
   .card:hover .open-link .arrow, .card:focus-within .open-link .arrow {
@@ -157,6 +159,7 @@
   }
   .card-link-overlay {
     position: absolute; inset: 0; border-radius: 16px;
+    background: none; border: none; padding: 0; cursor: pointer;
   }
 
   footer {
@@ -167,6 +170,116 @@
   }
   footer a { color: var(--accent); }
   footer a:hover { text-decoration: underline; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(6, 34, 51, .55);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: clamp(1rem, 4vw, 3.5rem) 1rem;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 18px;
+    width: min(640px, 100%);
+    max-height: none;
+    box-shadow: 0 30px 60px -20px rgba(6, 34, 51, .45);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    animation: pop-in .18s ease;
+  }
+  @keyframes pop-in {
+    from { transform: translateY(10px) scale(.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  .modal-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem;
+    padding: 1.35rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-head-text h3 {
+    font-family: var(--ff-display); font-weight: 600;
+    font-size: 1.25rem; margin: 0 0 .4rem; color: var(--deep);
+  }
+  .modal-close {
+    background: var(--sky-base); border: 1px solid var(--line);
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--deep); flex-shrink: 0;
+    font-size: 1.05rem; line-height: 1;
+    transition: background .15s ease, transform .15s ease;
+  }
+  .modal-close:hover { background: var(--line); transform: rotate(90deg); }
+
+  .modal-body { padding: 1.35rem 1.5rem 1.6rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .modal-section-label {
+    font-family: var(--ff-mono); font-size: .72rem; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--accent); font-weight: 500;
+    margin: 0 0 .5rem;
+  }
+
+  .modal-readme {
+    font-size: .93rem; line-height: 1.6; color: var(--muted); margin: 0;
+    white-space: pre-line;
+  }
+
+  .demo-frame {
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--line);
+    background: #0B4A6F;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .demo-frame video, .demo-frame img {
+    display: block; width: 100%; height: auto; max-height: 360px;
+    object-fit: contain; background: #061e30;
+  }
+
+  .modal-instructions {
+    background: var(--sky-base);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+  }
+  .modal-instructions ol {
+    margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: .5rem;
+  }
+  .modal-instructions li {
+    font-size: .88rem; line-height: 1.5; color: var(--deep);
+  }
+  .modal-instructions code {
+    font-family: var(--ff-mono); font-size: .82rem;
+    background: #fff; border: 1px solid var(--line);
+    padding: .1rem .35rem; border-radius: 5px; color: var(--accent);
+  }
+
+  .modal-actions {
+    display: flex; flex-wrap: wrap; gap: .7rem;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: .45rem;
+    font-family: var(--ff-mono); font-size: .84rem; font-weight: 500;
+    padding: .65rem 1.05rem; border-radius: 10px;
+    cursor: pointer; border: 1px solid transparent;
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 8px 18px -8px rgba(29, 120, 200, .6);
+  }
+  .btn-primary:hover { background: #1668ab; }
+  .btn-ghost {
+    background: var(--card); color: var(--accent); border-color: var(--line);
+  }
+  .btn-ghost:hover { border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -182,7 +295,7 @@
   <header>
     <p class="eyebrow"><span class="dot"></span> r00t-tsai / <a href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows" target="_blank" rel="noopener">Utility-Scripts-for-Windows</a></p>
     <h1>Small scripts that do one job well.</h1>
-    <p class="lede">A handful of Windows utilities for cleanup, organizing, recording, display tuning, automation, remote access, and focus. Pick one below to open the file directly.</p>
+    <p class="lede">A handful of Windows utilities for cleanup, organizing, recording, display tuning, automation, remote access, and focus. Pick one below for a quick preview before you grab the code.</p>
   </header>
 
   <main class="grid">
@@ -192,30 +305,30 @@
       <h2>Filter Studio</h2>
       <p>An AutoHotkey v2 overlay utility for custom screen color filters, opacity controls, monitor brightness adjustments, and quick presets (Eye Health, Reading, Night Light, Movie).</p>
       <p class="note">NOTE: AutoHotkey 2.0 must be installed on your system first before using!</p>
-      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/filter_studio.ahk" target="_blank" rel="noopener" aria-label="Open filter_studio.ahk">
+      <button class="open-link" type="button" data-open-modal="filter-studio" aria-haspopup="dialog">
         Open file <span class="arrow">→</span>
-      </a>
-      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/filter_studio.ahk" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+      </button>
+      <button class="card-link-overlay" type="button" data-open-modal="filter-studio" tabindex="-1" aria-hidden="true"></button>
     </article>
 
     <article class="card">
       <span class="tag bat">.bat</span>
       <h2>Bulk File / Folder Deleter</h2>
       <p>A batch utility that clears out files by type and whole folders with a confirmation step before anything permanent happens.</p>
-      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/cleanup_batch.bat" target="_blank" rel="noopener" aria-label="Open cleanup_batch.bat">
+      <button class="open-link" type="button" data-open-modal="cleanup-batch" aria-haspopup="dialog">
         Open file <span class="arrow">→</span>
-      </a>
-      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/cleanup_batch.bat" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+      </button>
+      <button class="card-link-overlay" type="button" data-open-modal="cleanup-batch" tabindex="-1" aria-hidden="true"></button>
     </article>
 
     <article class="card">
       <span class="tag bat">.bat</span>
       <h2>File Organizer</h2>
       <p>A batch utility that sorts out files (Images, Music, Videos, Documents, etc.) automatically based on file extension.</p>
-      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/file_organizer.bat" target="_blank" rel="noopener" aria-label="Open file_organizer.bat">
+      <button class="open-link" type="button" data-open-modal="file-organizer" aria-haspopup="dialog">
         Open file <span class="arrow">→</span>
-      </a>
-      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/file_organizer.bat" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+      </button>
+      <button class="card-link-overlay" type="button" data-open-modal="file-organizer" tabindex="-1" aria-hidden="true"></button>
     </article>
 
     <article class="card">
@@ -223,20 +336,20 @@
       <h2>Macro Recorder & Playback</h2>
       <p>An AHK script that records mouse moves, clicks, and keystrokes, then plays them back exactly as captured.</p>
       <p class="note">NOTE: AutoHotkey 2.0 must be installed on your system first before using!</p>
-      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/macro_recorder.ahk" target="_blank" rel="noopener" aria-label="Open macro_recorder.ahk">
+      <button class="open-link" type="button" data-open-modal="macro-recorder" aria-haspopup="dialog">
         Open file <span class="arrow">→</span>
-      </a>
-      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/macro_recorder.ahk" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+      </button>
+      <button class="card-link-overlay" type="button" data-open-modal="macro-recorder" tabindex="-1" aria-hidden="true"></button>
     </article>
 
     <article class="card">
       <span class="tag html">.html</span>
       <h2>Tabata Timer</h2>
       <p>A configurable work/rest interval timer with sound cues, round tracking, and a screen wake lock. It runs entirely in your browser.</p>
-      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/tabata_timer.html" target="_blank" rel="noopener" aria-label="Open Tabata Timer">
+      <button class="open-link" type="button" data-open-modal="tabata-timer" aria-haspopup="dialog">
         Open file <span class="arrow">→</span>
-      </a>
-      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/tabata_timer.html" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+      </button>
+      <button class="card-link-overlay" type="button" data-open-modal="tabata-timer" tabindex="-1" aria-hidden="true"></button>
     </article>
 
     <article class="card">
@@ -244,10 +357,10 @@
       <h2>Focus Website Blocker</h2>
       <p>A Tampermonkey userscript that replaces distracting sites with a blocked-page message the instant they start loading.</p>
       <p class="note">NOTE: Tampermonkey extension must be installed in your browser first.</p>
-      <a class="open-link" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/focus_website_blocker.js" target="_blank" rel="noopener" aria-label="Open focus_website_blocker.js">
+      <button class="open-link" type="button" data-open-modal="focus-blocker" aria-haspopup="dialog">
         Open file <span class="arrow">→</span>
-      </a>
-      <a class="card-link-overlay" href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main/focus_website_blocker.js" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"></a>
+      </button>
+      <button class="card-link-overlay" type="button" data-open-modal="focus-blocker" tabindex="-1" aria-hidden="true"></button>
     </article>
 
     <article class="card">
@@ -277,6 +390,153 @@
     <a href="https://github.com/r00t-tsai/Utility-Scripts-for-Windows" target="_blank" rel="noopener">View full repo</a>
   </footer>
 </div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <div class="modal-head-text">
+        <h3 id="modalTitle"></h3>
+      </div>
+      <button class="modal-close" id="modalClose" type="button" aria-label="Close preview">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <p class="modal-section-label">Readme</p>
+        <p class="modal-readme" id="modalReadme"></p>
+      </div>
+
+      <div>
+        <p class="modal-section-label">Demo</p>
+        <div class="demo-frame" id="modalDemoFrame"></div>
+      </div>
+
+      <div>
+        <p class="modal-section-label">Get the file</p>
+        <div class="modal-instructions">
+          <ol>
+            <li>Click <strong>View code on GitHub</strong> below — it opens the script's file page.</li>
+            <li>On that page, look at the top-right corner of the file view for the small toolbar of icons.</li>
+            <li>Click the <strong>download icon</strong> (it looks like a downward arrow) to grab the <code>raw</code> version of the file.</li>
+            <li>Save it anywhere on your machine, then run/import it as described in the readme above.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <a class="btn btn-primary" id="modalCodeLink" href="#" target="_blank" rel="noopener">View code on GitHub →</a>
+        <button class="btn btn-ghost" id="modalCloseBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const REPO_BASE = "https://github.com/r00t-tsai/Utility-Scripts-for-Windows/blob/main";
+  const SRC_BASE  = "https://github.com/r00t-tsai/Utility-Scripts-for-Windows/raw/main/src";
+
+  const scripts = {
+    "filter-studio": {
+      title: "Filter Studio",
+      readme: "An AutoHotkey v2 overlay utility for custom screen color filters, opacity controls, and monitor brightness adjustments. Comes with quick presets: Eye Health, Reading, Night Light, and Movie.\n\nRequires AutoHotkey 2.0 installed before running.",
+      codeUrl: REPO_BASE + "/filter_studio.ahk",
+      media: { type: "image", src: SRC_BASE + "/filter_studio.PNG" }
+    },
+    "cleanup-batch": {
+      title: "Bulk File / Folder Deleter",
+      readme: "A batch utility that clears out files by type and whole folders in one pass. A confirmation step runs before anything is permanently deleted, so nothing gets wiped by accident.",
+      codeUrl: REPO_BASE + "/cleanup_batch.bat",
+      media: { type: "video", src: SRC_BASE + "/cleanup_batch.mp4" }
+    },
+    "file-organizer": {
+      title: "File Organizer",
+      readme: "A batch utility that automatically sorts files into folders — Images, Music, Videos, Documents, and more — based on file extension.",
+      codeUrl: REPO_BASE + "/file_organizer.bat",
+      media: { type: "video", src: SRC_BASE + "/file_organizer.mp4" }
+    },
+    "macro-recorder": {
+      title: "Macro Recorder & Playback",
+      readme: "An AutoHotkey script that records mouse moves, clicks, and keystrokes, then plays them back exactly as captured.\n\nRequires AutoHotkey 2.0 installed before running.",
+      codeUrl: REPO_BASE + "/macro_recorder.ahk",
+      media: { type: "video", src: SRC_BASE + "/macro_recorder.mp4" }
+    },
+    "tabata-timer": {
+      title: "Tabata Timer",
+      readme: "A configurable work/rest interval timer with sound cues, round tracking, and a screen wake lock. Runs entirely in your browser — no install needed.",
+      codeUrl: REPO_BASE + "/tabata_timer.html",
+      media: { type: "image", src: SRC_BASE + "/tabata_timer.PNG" }
+    },
+    "focus-blocker": {
+      title: "Focus Website Blocker",
+      readme: "A Tampermonkey userscript that replaces distracting sites with a blocked-page message the instant they start loading.\n\nRequires the Tampermonkey browser extension installed first.",
+      codeUrl: REPO_BASE + "/focus_website_blocker.js",
+      media: { type: "video", src: SRC_BASE + "/tampermonkey.mp4" }
+    }
+  };
+
+  const backdrop   = document.getElementById('modalBackdrop');
+  const titleEl    = document.getElementById('modalTitle');
+  const readmeEl   = document.getElementById('modalReadme');
+  const demoFrame  = document.getElementById('modalDemoFrame');
+  const codeLink   = document.getElementById('modalCodeLink');
+  const closeBtn   = document.getElementById('modalClose');
+  const closeBtn2  = document.getElementById('modalCloseBtn');
+
+  let lastFocused = null;
+
+  function openModal(key) {
+    const data = scripts[key];
+    if (!data) return;
+
+    lastFocused = document.activeElement;
+
+    titleEl.textContent = data.title;
+    readmeEl.textContent = data.readme;
+    codeLink.href = data.codeUrl;
+
+    demoFrame.innerHTML = '';
+    if (data.media.type === 'video') {
+      const video = document.createElement('video');
+      video.src = data.media.src;
+      video.controls = true;
+      video.autoplay = true;
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      demoFrame.appendChild(video);
+    } else {
+      const img = document.createElement('img');
+      img.src = data.media.src;
+      img.alt = data.title + ' preview screenshot';
+      demoFrame.appendChild(img);
+    }
+
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    closeBtn.focus();
+  }
+
+  function closeModal() {
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    demoFrame.innerHTML = '';
+    if (lastFocused) lastFocused.focus();
+  }
+
+  document.querySelectorAll('[data-open-modal]').forEach(el => {
+    el.addEventListener('click', () => openModal(el.getAttribute('data-open-modal')));
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  closeBtn2.addEventListener('click', closeModal);
+
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop.classList.contains('open')) closeModal();
+  });
+</script>
 
 </body>
 </html>
