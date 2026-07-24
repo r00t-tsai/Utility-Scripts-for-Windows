@@ -1,5 +1,6 @@
 ; Macro Recorder (Overhauled)
 ; Installation: Download AutoHotkey v2 and double-click to run.
+; LIMITATIONS: This is a blind script relying on predictable environments (such as repetitive tasks/quests in games, logging redundant informations, etc.). It may fail with interactive tasks that require different setups.
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 if not A_IsAdmin {
