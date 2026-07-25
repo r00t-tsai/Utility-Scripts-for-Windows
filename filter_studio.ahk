@@ -2,29 +2,16 @@
 #SingleInstance Force
 global SettingsFile := A_ScriptDir . "\FilterStudio.ini"
 OnExit(OnAppExit)
-global colorOverlay := Gui("-Caption +AlwaysOnTop +ToolWindow +E0x20")
-colorOverlay.BackColor := "FF7F00"
-
-; SM_XVIRTUALSCREEN=76, SM_YVIRTUALSCREEN=77, SM_CXVIRTUALSCREEN=78, SM_CYVIRTUALSCREEN=79
-global VScreenX := SysGet(76)
-global VScreenY := SysGet(77)
-global VScreenW := SysGet(78)
-global VScreenH := SysGet(79)
-
-colorOverlay.Show(Format("x{} y{} w{} h{} NoActivate Hide", VScreenX, VScreenY, VScreenW, VScreenH))
 
 global FilterColors := Map(
-    ; Primary Colors
     "Red",           "FF0000",
     "Yellow",        "FFFF00",
     "Blue",          "0000FF",
 
-    ; Secondary Colors
     "Orange",        "FF7F00",
     "Green",         "00FF00",
     "Violet",        "8B00FF",
 
-    ; Tertiary Colors
     "Red-Orange",    "FF4500",
     "Yellow-Orange", "FFBF00",
     "Yellow-Green",  "7FFF00",
@@ -34,12 +21,14 @@ global FilterColors := Map(
 )
 
 global Presets := Map(
-    "Eye Health",   {Bright: 70,  Strength: 70, Alpha: 35, Color: "Orange"},
-    "Read",         {Bright: 85,  Strength: 40, Alpha: 25, Color: "Yellow"},
-    "Game",         {Bright: 60,  Strength: 30, Alpha: 12, Color: "Blue"},
-    "Movie",        {Bright: 60,  Strength: 50, Alpha: 18, Color: "Orange"},
-    "Reset / Off",  {Bright: 100, Strength: 50, Alpha: 0,  Color: "Orange"}
+    "Eye Health",   {Bright: 85,  Strength: 55, Color: "Orange"},
+    "Read",         {Bright: 90,  Strength: 30, Color: "Yellow-Orange"},
+    "Game",         {Bright: 80,  Strength: 15, Color: "Blue"},
+    "Movie",        {Bright: 55,  Strength: 45, Color: "Red-Orange"},
+    "Custom",       {Bright: 100, Strength: 0,  Color: "Orange"},
+    "Reset / Off",  {Bright: 100, Strength: 0,  Color: "Orange"}
 )
+global PresetOrder := ["Eye Health", "Read", "Game", "Movie", "Custom", "Reset / Off"]
 
 global ColorList := [
     "Red", "Yellow", "Blue",
@@ -47,53 +36,81 @@ global ColorList := [
     "Red-Orange", "Yellow-Orange", "Yellow-Green", "Blue-Green", "Blue-Violet", "Red-Violet"
 ]
 
-global BrightnessMethod := ""   ; "WMI", "DDCCI", or "" (none found)
-global DDCMonitorHandles := []  ; cached physical monitor handles for DDC/CI
-global SuppressSave := false    ; true while we're programmatically setting controls (e.g. on load)
+global BrightnessMethod    := ""
+global DDCMonitorHandles   := []
+global GammaMonitorDCs     := []
+global SuppressSave        := false
+global Schedule            := []
+global lastAppliedScheduleKey := ""
+global ApplyingPreset      := false
+global CurrentPresetSource := ""
+global lastAppliedRampKey  := ""
+global StartupEnabled      := false
+global Uses24HourClock     := true
+
 A_IconTip := "Filter Studio"
 Tray := A_TrayMenu
 Tray.Delete()
 Tray.Add("Show Filter Studio", (*) => mainGui.Show())
 Tray.Add("Exit Filter Studio", (*) => ExitApp())
 Tray.Default := "Show Filter Studio"
+
 global mainGui := Gui("+AlwaysOnTop", "Filter Studio")
 mainGui.MarginX := 15
 mainGui.MarginY := 15
 mainGui.SetFont("s10 bold", "Segoe UI")
 mainGui.Add("Text", "w330 xm", "Quick Presets:")
 mainGui.SetFont("s9 norm", "Segoe UI")
-btnEye   := mainGui.Add("Button", "w160 h35 xm y+8", "Eye Health")
-btnRead  := mainGui.Add("Button", "w160 h35 x+10 yp", "Reading")
-btnGame  := mainGui.Add("Button", "w160 h35 xm y+8", "Gaming")
-btnMovie := mainGui.Add("Button", "w160 h35 x+10 yp", "Movie")
-btnReset := mainGui.Add("Button", "w330 h35 xm y+8", "Turn Off")
+btnEye    := mainGui.Add("Button", "w160 h35 xm y+8", "Eye Health")
+btnRead   := mainGui.Add("Button", "w160 h35 x+10 yp", "Reading")
+btnGame   := mainGui.Add("Button", "w160 h35 xm y+8", "Gaming")
+btnMovie  := mainGui.Add("Button", "w160 h35 x+10 yp", "Movie")
+btnCustom := mainGui.Add("Button", "w160 h35 xm y+8", "Custom")
+btnReset  := mainGui.Add("Button", "w160 h35 x+10 yp", "Turn Off")
+
 mainGui.SetFont("s10 bold", "Segoe UI")
 mainGui.Add("Text", "w330 xm y+18", "Adjustments:")
 mainGui.SetFont("s9 norm", "Segoe UI")
 mainGui.Add("Text", "w330 xm y+8", "Screen Brightness:")
 global sliderBright := mainGui.Add("Slider", "w330 xm y+2 Range10-100 ToolTip", 100)
 mainGui.Add("Text", "w330 xm y+8", "Filter Color:")
-global ddlColor := mainGui.Add("DropDownList", "w330 xm y+2 Choose4", ColorList) ; Choose4 = Orange default
+global ddlColor := mainGui.Add("DropDownList", "w330 xm y+2 Choose4", ColorList)
 mainGui.Add("Text", "w330 xm y+8", "Filter Strength:")
-global sliderStrength := mainGui.Add("Slider", "w330 xm y+2 Range10-100 ToolTip", 50)
-mainGui.Add("Text", "w330 xm y+8", "Filter Opacity:")
-global sliderAlpha := mainGui.Add("Slider", "w330 xm y+2 Range0-80 ToolTip", 0)
+global sliderStrength := mainGui.Add("Slider", "w330 xm y+2 Range0-100 ToolTip", 50)
+
 mainGui.SetFont("s10 bold", "Segoe UI")
 mainGui.Add("Text", "w330 xm y+18", "Preferences:")
 mainGui.SetFont("s9 norm", "Segoe UI")
-global chkNotify := mainGui.Add("Checkbox", "w330 xm y+6 Checked1", "Show notification on minimize to tray")
+global chkNotify := mainGui.Add("Checkbox", "w330 xm y+6 Checked1", "Show notifications")
+global chkStartup := mainGui.Add("Checkbox", "w330 xm y+6", "Run automatically at Windows startup")
+
+mainGui.SetFont("s10 bold", "Segoe UI")
+mainGui.Add("Text", "w330 xm y+18", "Auto Schedule:")
+mainGui.SetFont("s9 norm", "Segoe UI")
+global chkAutoSchedule := mainGui.Add("Checkbox", "w330 xm y+6", "Automatic Switching")
+global lvSchedule := mainGui.Add("ListView", "w330 h100 xm y+8", ["Time", "Preset"])
+lvSchedule.ModifyCol(1, 115)
+lvSchedule.ModifyCol(2, 205)
+btnSchedAdd    := mainGui.Add("Button", "w105 y+6 xm", "Add...")
+btnSchedEdit   := mainGui.Add("Button", "w105 x+7 yp", "Edit...")
+btnSchedRemove := mainGui.Add("Button", "w105 x+7 yp", "Remove")
 
 btnEye.OnEvent("Click", (*) => ApplyPreset("Eye Health"))
 btnRead.OnEvent("Click", (*) => ApplyPreset("Read"))
 btnGame.OnEvent("Click", (*) => ApplyPreset("Game"))
 btnMovie.OnEvent("Click", (*) => ApplyPreset("Movie"))
+btnCustom.OnEvent("Click", (*) => ApplyPreset("Custom"))
 btnReset.OnEvent("Click", (*) => ApplyPreset("Reset / Off"))
 
-sliderBright.OnEvent("Change", (*) => UpdateDisplay())
-sliderStrength.OnEvent("Change", (*) => UpdateDisplay())
-sliderAlpha.OnEvent("Change", (*) => UpdateDisplay())
-ddlColor.OnEvent("Change", (*) => UpdateDisplay())
+sliderBright.OnEvent("Change", (*) => OnAdjustmentChanged())
+sliderStrength.OnEvent("Change", (*) => OnAdjustmentChanged())
+ddlColor.OnEvent("Change", (*) => OnAdjustmentChanged())
 chkNotify.OnEvent("Click", (*) => SaveSettings())
+chkAutoSchedule.OnEvent("Click", (*) => OnAutoScheduleToggled())
+chkStartup.OnEvent("Click", (*) => OnStartupToggled())
+btnSchedAdd.OnEvent("Click", (*) => OpenScheduleEditor(false))
+btnSchedEdit.OnEvent("Click", (*) => OpenScheduleEditor(true))
+btnSchedRemove.OnEvent("Click", (*) => RemoveScheduleEntry())
 
 mainGui.OnEvent("Close", MinimizeToTray)
 
@@ -111,97 +128,144 @@ MinimizeToTray(*) {
         mainGui.Show()
 }
 
+GammaMonitorDCs := GetMonitorDCs()
 DetectBrightnessMethod()
+Uses24HourClock := DetectSystemTimeFormat()
 LoadSettings()
 mainGui.Show("Center")
+SchedulerTick()
+SetTimer(SchedulerTick, 30000)
+
 
 ApplyPreset(name) {
+    global Presets, sliderBright, sliderStrength, ddlColor, ApplyingPreset, CurrentPresetSource
     p := Presets[name]
+    ApplyingPreset := true
     sliderBright.Value   := p.Bright
     sliderStrength.Value := p.Strength
-    sliderAlpha.Value    := p.Alpha
-    ddlColor.Text        := p.Color
-    UpdateDisplay()
+    ddlColor.Text         := p.Color
+    ApplyingPreset := false
+    CurrentPresetSource := name
+    CommitDisplayUpdate()
 }
 
-UpdateDisplay() {
-    brightVal   := sliderBright.Value   ; 10% to 100%
-    strengthVal := sliderStrength.Value ; 10% to 100%
-    alphaVal    := sliderAlpha.Value    ; 0% to 80%
+OnAdjustmentChanged() {
+    global ApplyingPreset, CurrentPresetSource
+    if (!ApplyingPreset) {
+        SaveAsCustomPreset()
+        CurrentPresetSource := "Custom"
+    }
+    RequestDisplayUpdate()
+}
+
+SaveAsCustomPreset() {
+    global Presets, sliderBright, sliderStrength, ddlColor
+    Presets["Custom"] := {Bright: sliderBright.Value, Strength: sliderStrength.Value, Color: ddlColor.Text}
+    SaveCustomPresetToIni()
+}
+
+SaveCustomPresetToIni() {
+    global Presets, SettingsFile
+    try {
+        c := Presets["Custom"]
+        IniWrite(c.Bright,    SettingsFile, "CustomPreset", "Brightness")
+        IniWrite(c.Strength,  SettingsFile, "CustomPreset", "Strength")
+        IniWrite(c.Color,     SettingsFile, "CustomPreset", "Color")
+    } catch as err {
+        ToolTip("Could not save Custom preset: " . err.Message)
+        SetTimer(() => ToolTip(), -3000)
+    }
+}
+
+RequestDisplayUpdate() {
+    SetTimer(CommitDisplayUpdate, -120)
+}
+
+CommitDisplayUpdate() {
+    global sliderBright, sliderStrength, ddlColor, lastAppliedRampKey
+    brightVal   := sliderBright.Value
+    strengthVal := sliderStrength.Value
     colorName   := ddlColor.Text
-    baseHex     := FilterColors[colorName]
 
-    SetSystemBrightness(brightVal)
+    key := brightVal . "|" . strengthVal . "|" . colorName
+    if (key != lastAppliedRampKey) {
+        lastAppliedRampKey := key
+        SetSystemBrightness(brightVal)
+        ramp := BuildGammaRamp(colorName, strengthVal)
+        ApplyGammaRamp(ramp)
+    }
 
-    sRatio := strengthVal / 100.0
+    SaveSettings()
+}
+
+
+GetMonitorDCs() {
+    dcs := []
+    i := 0
+    Loop {
+        size := 840
+        buf := Buffer(size, 0)
+        NumPut("UInt", size, buf, 0)
+        if !DllCall("EnumDisplayDevicesW", "ptr", 0, "uint", i, "ptr", buf, "uint", 0)
+            break
+        stateFlags := NumGet(buf, 324, "UInt")
+        deviceName := StrGet(buf.Ptr + 4, 32, "UTF-16")
+        if (stateFlags & 0x1) {
+            hdc := DllCall("gdi32\CreateDCW", "wstr", "DISPLAY", "wstr", deviceName, "ptr", 0, "ptr", 0, "ptr")
+            if hdc
+                dcs.Push(hdc)
+        }
+        i++
+        if (i > 16)
+            break
+    }
+    return dcs
+}
+
+BuildGammaRamp(colorName, strengthVal) {
+    global FilterColors
+    baseHex := FilterColors[colorName]
+    sRatio  := strengthVal / 100.0
     rBase := Integer("0x" . SubStr(baseHex, 1, 2))
     gBase := Integer("0x" . SubStr(baseHex, 3, 2))
     bBase := Integer("0x" . SubStr(baseHex, 5, 2))
 
-    rFinal := Integer(255 - sRatio * (255 - rBase))
-    gFinal := Integer(255 - sRatio * (255 - gBase))
-    bFinal := Integer(255 - sRatio * (255 - bBase))
+    rMul := (255 - sRatio * (255 - rBase)) / 255.0
+    gMul := (255 - sRatio * (255 - gBase)) / 255.0
+    bMul := (255 - sRatio * (255 - bBase)) / 255.0
 
-    finalHex := Format("{:02X}{:02X}{:02X}", rFinal, gFinal, bFinal)
-    colorOverlay.BackColor := finalHex
-
-    filterAlphaByte := Integer(alphaVal * 2.55)
-    if (filterAlphaByte > 0) {
-        WinSetTransparent(filterAlphaByte, colorOverlay)
-        colorOverlay.Show("NoActivate")
-    } else {
-        colorOverlay.Hide()
+    buf := Buffer(1536, 0)
+    Loop 256 {
+        idx := A_Index - 1
+        rVal := Min(65535, Round(idx * 257 * rMul))
+        gVal := Min(65535, Round(idx * 257 * gMul))
+        bVal := Min(65535, Round(idx * 257 * bMul))
+        NumPut("UShort", rVal, buf, idx * 2)
+        NumPut("UShort", gVal, buf, 512 + idx * 2)
+        NumPut("UShort", bVal, buf, 1024 + idx * 2)
     }
-
-    SaveSettings()
+    return buf
 }
 
-SaveSettings() {
-    global SuppressSave
-    if (SuppressSave)
-        return
-    try {
-        IniWrite(sliderBright.Value, SettingsFile, "Settings", "Brightness")
-        IniWrite(sliderStrength.Value, SettingsFile, "Settings", "Strength")
-        IniWrite(sliderAlpha.Value, SettingsFile, "Settings", "Alpha")
-        IniWrite(ddlColor.Text, SettingsFile, "Settings", "Color")
-        IniWrite(chkNotify.Value, SettingsFile, "Settings", "Notify")
-    } catch as err {
-        ; Non-fatal: settings just won't persist this run
-        ToolTip("Could not save settings: " . err.Message)
-        SetTimer(() => ToolTip(), -3000)
+ApplyGammaRamp(buf) {
+    global GammaMonitorDCs
+    for hdc in GammaMonitorDCs {
+        DllCall("gdi32\SetDeviceGammaRamp", "ptr", hdc, "ptr", buf)
     }
 }
 
-LoadSettings() {
-    global SuppressSave
-    if !FileExist(SettingsFile) {
-        UpdateDisplay()
-        return
+RestoreLinearGamma() {
+    buf := Buffer(1536, 0)
+    Loop 256 {
+        idx := A_Index - 1
+        val := Min(65535, idx * 257)
+        NumPut("UShort", val, buf, idx * 2)
+        NumPut("UShort", val, buf, 512 + idx * 2)
+        NumPut("UShort", val, buf, 1024 + idx * 2)
     }
-
-    SuppressSave := true
-    try {
-        sliderBright.Value   := Integer(IniRead(SettingsFile, "Settings", "Brightness", 100))
-        sliderStrength.Value := Integer(IniRead(SettingsFile, "Settings", "Strength", 50))
-        sliderAlpha.Value    := Integer(IniRead(SettingsFile, "Settings", "Alpha", 0))
-        savedColor           := IniRead(SettingsFile, "Settings", "Color", "Orange")
-        if FilterColors.Has(savedColor)
-            ddlColor.Text := savedColor
-        chkNotify.Value      := Integer(IniRead(SettingsFile, "Settings", "Notify", 1))
-    } catch as err {
-        ToolTip("Could not load saved settings: " . err.Message)
-        SetTimer(() => ToolTip(), -3000)
-    }
-    SuppressSave := false
-
-    UpdateDisplay() ; applies loaded values and saves normalized values back
+    ApplyGammaRamp(buf)
 }
 
-OnAppExit(*) {
-    SaveSettings()
-    colorOverlay.Destroy()
-}
 
 DetectBrightnessMethod() {
     global BrightnessMethod, DDCMonitorHandles
@@ -285,4 +349,332 @@ SetSystemBrightness(level) {
         ToolTip("No supported brightness control found on this system.")
         SetTimer(() => ToolTip(), -3000)
     }
+}
+
+
+OnAutoScheduleToggled() {
+    SaveSettings()
+    if (chkAutoSchedule.Value = 1)
+        SchedulerTick()
+}
+
+
+OnStartupToggled() {
+    global chkStartup, StartupEnabled
+    StartupEnabled := chkStartup.Value = 1
+    SetStartupRegistry(StartupEnabled)
+    SaveSettings()
+}
+
+SetStartupRegistry(enable) {
+    keyPath   := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
+    valueName := "FilterStudio"
+    try {
+        if (enable) {
+            cmd := A_IsCompiled ? '"' . A_ScriptFullPath . '"' : '"' . A_AhkPath . '" "' . A_ScriptFullPath . '"'
+            RegWrite(cmd, "REG_SZ", keyPath, valueName)
+        } else {
+            RegDeleteKeyValueIfExists(keyPath, valueName)
+        }
+    } catch as err {
+        ToolTip("Could not update startup setting: " . err.Message)
+        SetTimer(() => ToolTip(), -3000)
+    }
+}
+
+RegDeleteKeyValueIfExists(keyPath, valueName) {
+    try RegDelete(keyPath, valueName)
+}
+
+
+DetectSystemTimeFormat() {
+    try {
+        val := RegRead("HKCU\Control Panel\International", "iTime")
+        return (val = "1")
+    } catch {
+        return true
+    }
+}
+
+OpenScheduleEditor(editMode) {
+    global lvSchedule, Schedule, mainGui, PresetOrder, Uses24HourClock
+
+    editIndex := 0
+    if editMode {
+        editIndex := lvSchedule.GetNext()
+        if !editIndex {
+            Flash("Select a schedule entry to edit first")
+            return
+        }
+    }
+
+    ed := Gui("+Owner" mainGui.Hwnd " +AlwaysOnTop", editMode ? "Edit Schedule Entry" : "Add Schedule Entry")
+    ed.SetFont("s9", "Segoe UI")
+
+    if (Uses24HourClock) {
+        ed.Add("Text", "xm y12", "Time (24-hour):")
+        edHour := ed.Add("Edit", "x+8 yp-3 w45 Number Center", "")
+        ed.Add("Text", "x+4 yp3", ":")
+        edMin  := ed.Add("Edit", "x+4 yp-3 w45 Number Center", "")
+        ed.Add("Text", "xm y+4", "Hour 0-23, minute 0-59")
+        ddlAmPm := ""
+    } else {
+        ed.Add("Text", "xm y12", "Time (12-hour):")
+        edHour := ed.Add("Edit", "x+8 yp-3 w45 Number Center", "")
+        ed.Add("Text", "x+4 yp3", ":")
+        edMin   := ed.Add("Edit", "x+4 yp-3 w45 Number Center", "")
+        ddlAmPm := ed.Add("DropDownList", "x+6 yp-3 w65", ["AM", "PM"])
+        ed.Add("Text", "xm y+4", "Hour 1-12, minute 0-59")
+    }
+
+    ed.Add("Text", "xm y+15", "Preset:")
+    ddlPreset := ed.Add("DropDownList", "x+8 yp-3 w150", PresetOrder)
+
+    if editMode {
+        entry := Schedule[editIndex]
+        if (Uses24HourClock) {
+            edHour.Text := entry.hour
+        } else {
+            h12 := Mod(entry.hour, 12)
+            if (h12 = 0)
+                h12 := 12
+            edHour.Text := h12
+            ddlAmPm.Text := (entry.hour < 12) ? "AM" : "PM"
+        }
+        edMin.Text     := entry.min
+        ddlPreset.Text := entry.preset
+    } else {
+        if (Uses24HourClock) {
+            edHour.Text := A_Hour
+        } else {
+            h12 := Mod(Integer(A_Hour), 12)
+            if (h12 = 0)
+                h12 := 12
+            edHour.Text := h12
+            ddlAmPm.Text := (Integer(A_Hour) < 12) ? "AM" : "PM"
+        }
+        edMin.Text := A_Min
+        ddlPreset.Choose(1)
+    }
+
+    btnOK     := ed.Add("Button", "xm y+20 w110 Default", "OK")
+    btnCancel := ed.Add("Button", "x+10 yp w110", "Cancel")
+
+    btnOK.OnEvent("Click", (*) => SaveScheduleEntry(ed, edHour, edMin, ddlAmPm, ddlPreset, editMode, editIndex))
+    btnCancel.OnEvent("Click", (*) => ed.Destroy())
+    ed.OnEvent("Close", (*) => ed.Destroy())
+    ed.Show((Uses24HourClock ? "w280" : "w320") . " h170")
+}
+
+SaveScheduleEntry(ed, edHour, edMin, ddlAmPm, ddlPreset, editMode, editIndex) {
+    global Schedule, Uses24HourClock
+
+    hRaw := Trim(edHour.Text)
+    mRaw := Trim(edMin.Text)
+    if (hRaw = "" || mRaw = "" || !IsInteger(hRaw) || !IsInteger(mRaw)) {
+        Flash("Enter a valid hour and minute")
+        return
+    }
+
+    h := Integer(hRaw)
+    m := Integer(mRaw)
+    if (m < 0 || m > 59) {
+        Flash("Minute must be between 0 and 59")
+        return
+    }
+
+    if (Uses24HourClock) {
+        if (h < 0 || h > 23) {
+            Flash("Hour must be between 0 and 23")
+            return
+        }
+        hour24 := h
+    } else {
+        if (h < 1 || h > 12) {
+            Flash("Hour must be between 1 and 12")
+            return
+        }
+        hour24 := Mod(h, 12)
+        if (ddlAmPm.Text = "PM")
+            hour24 += 12
+    }
+
+    p := ddlPreset.Text
+    if (p = "") {
+        Flash("Choose a preset")
+        return
+    }
+
+    entry := {hour: hour24, min: m, preset: p}
+    if editMode
+        Schedule[editIndex] := entry
+    else
+        Schedule.Push(entry)
+
+    SortSchedule()
+    RefreshScheduleListView()
+    SaveSettings()
+    ed.Destroy()
+}
+
+RemoveScheduleEntry() {
+    global lvSchedule, Schedule
+    idx := lvSchedule.GetNext()
+    if !idx {
+        Flash("Select a schedule entry to remove")
+        return
+    }
+    Schedule.RemoveAt(idx)
+    RefreshScheduleListView()
+    SaveSettings()
+}
+
+SortSchedule() {
+    global Schedule
+    n := Schedule.Length
+    Loop n - 1 {
+        i := A_Index
+        Loop n - i {
+            j := A_Index
+            a := Schedule[j].hour * 60 + Schedule[j].min
+            b := Schedule[j + 1].hour * 60 + Schedule[j + 1].min
+            if (a > b) {
+                tmp := Schedule[j]
+                Schedule[j] := Schedule[j + 1]
+                Schedule[j + 1] := tmp
+            }
+        }
+    }
+}
+
+RefreshScheduleListView() {
+    global lvSchedule, Schedule
+    lvSchedule.Delete()
+    for e in Schedule
+        lvSchedule.Add(, FormatScheduleTime(e.hour, e.min), e.preset)
+}
+
+FormatScheduleTime(hour, min) {
+    global Uses24HourClock
+    if (Uses24HourClock)
+        return Format("{:02}:{:02}", hour, min)
+    h12 := Mod(hour, 12)
+    if (h12 = 0)
+        h12 := 12
+    ampm := (hour < 12) ? "AM" : "PM"
+    return Format("{:02}:{:02} {}", h12, min, ampm)
+}
+
+SchedulerTick() {
+    global chkAutoSchedule, Schedule, lastAppliedScheduleKey, Presets
+    if !IsSet(chkAutoSchedule) || chkAutoSchedule.Value != 1
+        return
+    if Schedule.Length = 0
+        return
+
+    nowMinutes := A_Hour * 60 + A_Min
+    chosen := Schedule[Schedule.Length]
+    for e in Schedule {
+        entryMinutes := e.hour * 60 + e.min
+        if (entryMinutes <= nowMinutes)
+            chosen := e
+    }
+
+    key := Format("{:02}:{:02}|{}", chosen.hour, chosen.min, chosen.preset)
+    if (key != lastAppliedScheduleKey) {
+        lastAppliedScheduleKey := key
+        if Presets.Has(chosen.preset)
+            ApplyPreset(chosen.preset)
+    }
+}
+
+
+SaveSettings() {
+    global SuppressSave, Schedule, sliderBright, sliderStrength, ddlColor, chkNotify, chkAutoSchedule, chkStartup, Presets, SettingsFile
+    if (SuppressSave)
+        return
+    try {
+        IniWrite(sliderBright.Value, SettingsFile, "Settings", "Brightness")
+        IniWrite(sliderStrength.Value, SettingsFile, "Settings", "Strength")
+        IniWrite(ddlColor.Text, SettingsFile, "Settings", "Color")
+        IniWrite(chkNotify.Value, SettingsFile, "Settings", "Notify")
+        IniWrite(chkAutoSchedule.Value, SettingsFile, "Settings", "AutoSchedule")
+        IniWrite(chkStartup.Value, SettingsFile, "Settings", "Startup")
+
+        c := Presets["Custom"]
+        IniWrite(c.Bright,   SettingsFile, "CustomPreset", "Brightness")
+        IniWrite(c.Strength, SettingsFile, "CustomPreset", "Strength")
+        IniWrite(c.Color,    SettingsFile, "CustomPreset", "Color")
+
+        IniDelete(SettingsFile, "Schedule")
+        IniWrite(Schedule.Length, SettingsFile, "Schedule", "Count")
+        i := 0
+        for e in Schedule {
+            i++
+            IniWrite(Format("{:02}:{:02}|{}", e.hour, e.min, e.preset), SettingsFile, "Schedule", "Item" i)
+        }
+    } catch as err {
+        ToolTip("Could not save settings: " . err.Message)
+        SetTimer(() => ToolTip(), -3000)
+    }
+}
+
+LoadSettings() {
+    global SuppressSave, Schedule, sliderBright, sliderStrength, ddlColor, chkNotify, chkAutoSchedule, chkStartup, StartupEnabled, Presets, SettingsFile, FilterColors
+    if !FileExist(SettingsFile) {
+        CommitDisplayUpdate()
+        return
+    }
+
+    SuppressSave := true
+    try {
+        sliderBright.Value   := Integer(IniRead(SettingsFile, "Settings", "Brightness", 100))
+        sliderStrength.Value := Integer(IniRead(SettingsFile, "Settings", "Strength", 50))
+        savedColor            := IniRead(SettingsFile, "Settings", "Color", "Orange")
+        if FilterColors.Has(savedColor)
+            ddlColor.Text := savedColor
+        chkNotify.Value       := Integer(IniRead(SettingsFile, "Settings", "Notify", 1))
+        chkAutoSchedule.Value := Integer(IniRead(SettingsFile, "Settings", "AutoSchedule", 0))
+        chkStartup.Value      := Integer(IniRead(SettingsFile, "Settings", "Startup", 0))
+        StartupEnabled        := chkStartup.Value = 1
+        SetStartupRegistry(StartupEnabled)
+
+        customBright   := Integer(IniRead(SettingsFile, "CustomPreset", "Brightness", 100))
+        customStrength := Integer(IniRead(SettingsFile, "CustomPreset", "Strength", 0))
+        customColor    := IniRead(SettingsFile, "CustomPreset", "Color", "Orange")
+        if !FilterColors.Has(customColor)
+            customColor := "Orange"
+        Presets["Custom"] := {Bright: customBright, Strength: customStrength, Color: customColor}
+
+        count := Integer(IniRead(SettingsFile, "Schedule", "Count", 0))
+        Schedule := []
+        Loop count {
+            raw := IniRead(SettingsFile, "Schedule", "Item" A_Index, "")
+            if (raw = "")
+                continue
+            parts := StrSplit(raw, "|")
+            timeParts := StrSplit(parts[1], ":")
+            Schedule.Push({hour: Integer(timeParts[1]), min: Integer(timeParts[2]), preset: parts[2]})
+        }
+        SortSchedule()
+        RefreshScheduleListView()
+    } catch as err {
+        ToolTip("Could not load saved settings: " . err.Message)
+        SetTimer(() => ToolTip(), -3000)
+    }
+    SuppressSave := false
+
+    CommitDisplayUpdate()
+}
+
+OnAppExit(*) {
+    SaveSettings()
+    RestoreLinearGamma()
+    for hdc in GammaMonitorDCs
+        DllCall("gdi32\DeleteDC", "ptr", hdc)
+}
+
+Flash(msg) {
+    ToolTip(msg)
+    SetTimer(() => ToolTip(), -2000)
 }
