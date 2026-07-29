@@ -47,6 +47,8 @@ global CurrentPresetSource := ""
 global lastAppliedRampKey  := ""
 global StartupEnabled      := false
 global Uses24HourClock     := true
+global StartMinimized      := false
+global RequirementsMet     := {brightness: false, colorFilter: false}
 
 A_IconTip := "Filter Studio"
 Tray := A_TrayMenu
@@ -95,6 +97,8 @@ btnSchedAdd    := mainGui.Add("Button", "w105 y+6 xm", "Add...")
 btnSchedEdit   := mainGui.Add("Button", "w105 x+7 yp", "Edit...")
 btnSchedRemove := mainGui.Add("Button", "w105 x+7 yp", "Remove")
 
+global txtStatus := mainGui.Add("Text", "w330 xm y+14 cRed", "")
+
 btnEye.OnEvent("Click", (*) => ApplyPreset("Eye Health"))
 btnRead.OnEvent("Click", (*) => ApplyPreset("Read"))
 btnGame.OnEvent("Click", (*) => ApplyPreset("Game"))
@@ -131,10 +135,74 @@ MinimizeToTray(*) {
 GammaMonitorDCs := GetMonitorDCs()
 DetectBrightnessMethod()
 Uses24HourClock := DetectSystemTimeFormat()
+
+for arg in A_Args {
+    if (StrLower(arg) = "/minimized" || StrLower(arg) = "-minimized") {
+        StartMinimized := true
+        break
+    }
+}
+
+CheckMinimumRequirements()
 LoadSettings()
-mainGui.Show("Center")
+
+if (StartMinimized) {
+    MinimizeToTray()
+} else {
+    mainGui.Show("Center")
+}
+
 SchedulerTick()
 SetTimer(SchedulerTick, 30000)
+
+
+CheckMinimumRequirements() {
+    global GammaMonitorDCs, BrightnessMethod, RequirementsMet
+    global sliderBright, sliderStrength, ddlColor
+    global btnEye, btnRead, btnGame, btnMovie, btnCustom, btnReset
+    global txtStatus, StartMinimized
+
+    RequirementsMet.colorFilter := (GammaMonitorDCs.Length > 0)
+    RequirementsMet.brightness  := (BrightnessMethod != "")
+
+    warnings := []
+
+    if !RequirementsMet.colorFilter {
+        warnings.Push("No display was detected that supports color/gamma adjustment. Color filtering is disabled.")
+        ddlColor.Enabled       := false
+        sliderStrength.Enabled := false
+    }
+
+    if !RequirementsMet.brightness {
+        warnings.Push("No supported brightness control (WMI or DDC/CI) was found on this system. Brightness adjustment is disabled.")
+        sliderBright.Enabled := false
+    }
+
+    if (!RequirementsMet.colorFilter && !RequirementsMet.brightness) {
+        for b in [btnEye, btnRead, btnGame, btnMovie, btnCustom, btnReset]
+            b.Enabled := false
+        warnings.Push("Filter Studio cannot control this display. The app will stay open but presets are disabled.")
+    }
+
+    if (warnings.Length = 0)
+        return
+
+    summary := ""
+    for i, w in warnings
+        summary .= (i = 1 ? "" : "  |  ") . w
+    txtStatus.Text := "⚠ " . summary
+
+    fullMsg := "Filter Studio detected the following limitations on this system:`n`n"
+    for w in warnings
+        fullMsg .= "• " . w . "`n`n"
+    fullMsg .= "You can keep using the parts of the app that are still available."
+
+    if (StartMinimized) {
+        TrayTip("Filter Studio - Limited functionality", fullMsg, 3)
+    } else {
+        MsgBox(fullMsg, "Filter Studio - Limited Functionality", "Icon!")
+    }
+}
 
 
 ApplyPreset(name) {
@@ -182,7 +250,7 @@ RequestDisplayUpdate() {
 }
 
 CommitDisplayUpdate() {
-    global sliderBright, sliderStrength, ddlColor, lastAppliedRampKey
+    global sliderBright, sliderStrength, ddlColor, lastAppliedRampKey, RequirementsMet
     brightVal   := sliderBright.Value
     strengthVal := sliderStrength.Value
     colorName   := ddlColor.Text
@@ -190,9 +258,12 @@ CommitDisplayUpdate() {
     key := brightVal . "|" . strengthVal . "|" . colorName
     if (key != lastAppliedRampKey) {
         lastAppliedRampKey := key
-        SetSystemBrightness(brightVal)
-        ramp := BuildGammaRamp(colorName, strengthVal)
-        ApplyGammaRamp(ramp)
+        if RequirementsMet.brightness
+            SetSystemBrightness(brightVal)
+        if RequirementsMet.colorFilter {
+            ramp := BuildGammaRamp(colorName, strengthVal)
+            ApplyGammaRamp(ramp)
+        }
     }
 
     SaveSettings()
@@ -255,6 +326,9 @@ ApplyGammaRamp(buf) {
 }
 
 RestoreLinearGamma() {
+    global GammaMonitorDCs
+    if (GammaMonitorDCs.Length = 0)
+        return
     buf := Buffer(1536, 0)
     Loop 256 {
         idx := A_Index - 1
@@ -371,7 +445,7 @@ SetStartupRegistry(enable) {
     valueName := "FilterStudio"
     try {
         if (enable) {
-            cmd := A_IsCompiled ? '"' . A_ScriptFullPath . '"' : '"' . A_AhkPath . '" "' . A_ScriptFullPath . '"'
+            cmd := A_IsCompiled ? '"' . A_ScriptFullPath . '" /minimized' : '"' . A_AhkPath . '" "' . A_ScriptFullPath . '" /minimized'
             RegWrite(cmd, "REG_SZ", keyPath, valueName)
         } else {
             RegDeleteKeyValueIfExists(keyPath, valueName)
@@ -505,6 +579,13 @@ SaveScheduleEntry(ed, edHour, edMin, ddlAmPm, ddlPreset, editMode, editIndex) {
         return
     }
 
+    for i, e in Schedule {
+        if (e.hour = hour24 && e.min = m && (!editMode || i != editIndex)) {
+            Flash("A schedule entry already exists at this time")
+            return
+        }
+    }
+
     entry := {hour: hour24, min: m, preset: p}
     if editMode
         Schedule[editIndex] := entry
@@ -602,7 +683,7 @@ SaveSettings() {
         IniWrite(chkStartup.Value, SettingsFile, "Settings", "Startup")
 
         c := Presets["Custom"]
-        IniWrite(c.Bright,   SettingsFile, "CustomPreset", "Brightness")
+        IniWrite(c.Bright,    SettingsFile, "CustomPreset", "Brightness")
         IniWrite(c.Strength, SettingsFile, "CustomPreset", "Strength")
         IniWrite(c.Color,    SettingsFile, "CustomPreset", "Color")
 
@@ -621,6 +702,7 @@ SaveSettings() {
 
 LoadSettings() {
     global SuppressSave, Schedule, sliderBright, sliderStrength, ddlColor, chkNotify, chkAutoSchedule, chkStartup, StartupEnabled, Presets, SettingsFile, FilterColors
+
     if !FileExist(SettingsFile) {
         CommitDisplayUpdate()
         return
@@ -628,9 +710,13 @@ LoadSettings() {
 
     SuppressSave := true
     try {
-        sliderBright.Value   := Integer(IniRead(SettingsFile, "Settings", "Brightness", 100))
-        sliderStrength.Value := Integer(IniRead(SettingsFile, "Settings", "Strength", 50))
-        savedColor            := IniRead(SettingsFile, "Settings", "Color", "Orange")
+        loadedBright := Integer(IniRead(SettingsFile, "Settings", "Brightness", 100))
+        sliderBright.Value := Max(10, Min(100, loadedBright))
+
+        loadedStrength := Integer(IniRead(SettingsFile, "Settings", "Strength", 50))
+        sliderStrength.Value := Max(0, Min(100, loadedStrength))
+
+        savedColor := IniRead(SettingsFile, "Settings", "Color", "Orange")
         if FilterColors.Has(savedColor)
             ddlColor.Text := savedColor
         chkNotify.Value       := Integer(IniRead(SettingsFile, "Settings", "Notify", 1))
@@ -639,8 +725,8 @@ LoadSettings() {
         StartupEnabled        := chkStartup.Value = 1
         SetStartupRegistry(StartupEnabled)
 
-        customBright   := Integer(IniRead(SettingsFile, "CustomPreset", "Brightness", 100))
-        customStrength := Integer(IniRead(SettingsFile, "CustomPreset", "Strength", 0))
+        customBright   := Max(10, Min(100, Integer(IniRead(SettingsFile, "CustomPreset", "Brightness", 100))))
+        customStrength := Max(0, Min(100, Integer(IniRead(SettingsFile, "CustomPreset", "Strength", 0))))
         customColor    := IniRead(SettingsFile, "CustomPreset", "Color", "Orange")
         if !FilterColors.Has(customColor)
             customColor := "Orange"
@@ -653,8 +739,22 @@ LoadSettings() {
             if (raw = "")
                 continue
             parts := StrSplit(raw, "|")
+            if (parts.Length != 2) {
+                continue
+            }
             timeParts := StrSplit(parts[1], ":")
-            Schedule.Push({hour: Integer(timeParts[1]), min: Integer(timeParts[2]), preset: parts[2]})
+            if (timeParts.Length != 2 || !IsInteger(timeParts[1]) || !IsInteger(timeParts[2])) {
+                continue
+            }
+            h := Integer(timeParts[1])
+            m := Integer(timeParts[2])
+            if (h < 0 || h > 23 || m < 0 || m > 59) {
+                continue
+            }
+            if !Presets.Has(parts[2]) {
+                continue
+            }
+            Schedule.Push({hour: h, min: m, preset: parts[2]})
         }
         SortSchedule()
         RefreshScheduleListView()
